@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bybit Kline Proxy</title>
+<style>
+body { font-family: monospace; margin: 20px; background: #fff; color: #000; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
+th { background: #f0f0f0; }
+h1 { font-size: 18px; }
+.meta { margin-bottom: 10px; color: #555; }
+</style>
+</head>
+<body>
+<h1>Bybit Kline Data</h1>
+<div class="meta" id="meta">Loading...</div>
+<table id="table">
+<thead>
+<tr>
+<th>Open Time</th>
+<th>Open</th>
+<th>High</th>
+<th>Low</th>
+<th>Close</th>
+<th>Volume</th>
+<th>Turnover</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const symbol = params.get('symbol') || 'BTCUSDT';
+const interval = params.get('interval') || '15';
+const limit = params.get('limit') || '50';
+const category = params.get('category') || 'linear';
+
+const url = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+
+function loadData() {
+  const now = new Date().toISOString();
+  document.getElementById('meta').textContent = `Symbol: ${symbol} | Interval: ${interval} | Limit: ${limit} | Last refresh: ${now}`;
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.retCode !== 0) {
+        document.getElementById('meta').textContent = 'Error: ' + data.retMsg;
+        return;
+      }
+      const rows = data.result.list;
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const ts = new Date(parseInt(r[0])).toISOString().replace('T', ' ').slice(0, 19);
+        [ts, r[1], r[2], r[3], r[4], r[5], r[6]].forEach(v => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => {
+      document.getElementById('meta').textContent = 'Fetch error: ' + err.message;
+    });
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
