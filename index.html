@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bybit Kline Proxy</title>
+<title>Binance Kline Proxy</title>
 <style>
 body { font-family: monospace; margin: 20px; background: #fff; color: #000; }
 table { border-collapse: collapse; width: 100%; margin-top: 10px; }
@@ -13,7 +13,7 @@ h1 { font-size: 18px; }
 </style>
 </head>
 <body>
-<h1>Bybit Kline Data</h1>
+<h1>Binance Kline Data</h1>
 <div class="meta" id="meta">Loading...</div>
 <table id="table">
 <thead>
@@ -24,7 +24,8 @@ h1 { font-size: 18px; }
 <th>Low</th>
 <th>Close</th>
 <th>Volume</th>
-<th>Turnover</th>
+<th>Quote Volume</th>
+<th>Trades</th>
 </tr>
 </thead>
 <tbody id="tbody"></tbody>
@@ -33,11 +34,10 @@ h1 { font-size: 18px; }
 <script>
 const params = new URLSearchParams(window.location.search);
 const symbol = params.get('symbol') || 'BTCUSDT';
-const interval = params.get('interval') || '15';
-const limit = params.get('limit') || '50';
-const category = params.get('category') || 'linear';
+const interval = params.get('interval') || '15m';
+const limit = params.get('limit') || '150';
 
-const url = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
 
 function loadData() {
   const now = new Date().toISOString();
@@ -45,17 +45,16 @@ function loadData() {
   fetch(url)
     .then(r => r.json())
     .then(data => {
-      if (data.retCode !== 0) {
-        document.getElementById('meta').textContent = 'Error: ' + data.retMsg;
+      if (!Array.isArray(data)) {
+        document.getElementById('meta').textContent = 'Error: ' + JSON.stringify(data);
         return;
       }
-      const rows = data.result.list;
       const tbody = document.getElementById('tbody');
       tbody.innerHTML = '';
-      rows.forEach(r => {
+      data.forEach(k => {
         const tr = document.createElement('tr');
-        const ts = new Date(parseInt(r[0])).toISOString().replace('T', ' ').slice(0, 19);
-        [ts, r[1], r[2], r[3], r[4], r[5], r[6]].forEach(v => {
+        const ts = new Date(k[0]).toISOString().replace('T', ' ').slice(0, 19);
+        [ts, k[1], k[2], k[3], k[4], k[5], k[7], k[8]].forEach(v => {
           const td = document.createElement('td');
           td.textContent = v;
           tr.appendChild(td);
